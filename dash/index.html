@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Training Dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb; --card: #ffffff; --text: #0b0b0b; --text2: #52514e; --muted: #787772;
+    --grid: #e8e7e3; --line: #dddcd7;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+    --good: #0ca30c; --bad: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface: #1a1a19; --card: #222221; --text: #ffffff; --text2: #c3c2b7; --muted: #8f8e86;
+      --grid: #2f2f2d; --line: #3a3a37;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19; --card: #222221; --text: #ffffff; --text2: #c3c2b7; --muted: #8f8e86;
+    --grid: #2f2f2d; --line: #3a3a37;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--surface); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { padding: 0 16px 48px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 0 8px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; }
+  button, select, input { font: inherit; color: var(--text); }
+  input, select { font-size: 16px; }   /* 16px+ stops iOS Safari zooming the page on focus */
+  select { max-width: 100%; }
+  .btn { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--muted); }
+  .btn[aria-pressed="true"], .btn.on { background: var(--text); color: var(--surface); border-color: var(--text); }
+  nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0 4px; }
+  .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 12px 0 16px; }
+  .controls .lbl { color: var(--muted); font-size: 13px; margin-right: 4px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .tile .k { color: var(--muted); font-size: 13px; }
+  .tile .v { font-size: 26px; font-weight: 600; line-height: 1.2; margin-top: 2px; }
+  .tile .d { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .hero { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .hero .v { font-size: 52px; font-weight: 650; }
+  .meter { height: 8px; background: var(--grid); background: color-mix(in srgb, var(--s1) 18%, var(--card)); border-radius: 4px; overflow: hidden; margin-top: 8px; width: 100%; }
+  .meter > i { display: block; height: 100%; background: var(--s1); border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 0 12px 40px; }
+    .btn { min-height: 40px; padding: 8px 14px; }            /* comfortable tap targets */
+    .card .top .btn { min-height: 36px; padding: 6px 12px; }
+    #lockForm .btn { min-height: 44px; padding: 10px 28px; }
+    .tiles { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .tile .v { font-size: 22px; } .hero .v { font-size: 44px; }
+    .plot { height: 240px; } .plot.tall { height: 320px; }
+    .card { padding: 12px 10px 8px; }
+  }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; min-width: 0; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .card .cs { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  .card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card .top .btn { padding: 2px 8px; font-size: 12px; }
+  .plot { position: relative; height: 260px; }
+  .plot.tall { height: 340px; }
+  .wk .hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .wk .nav { display: flex; gap: 6px; align-items: center; }
+  .wk .nav .btn { min-width: 40px; }
+  .wkstrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+  .daybtn { background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 6px 2px; cursor: pointer; text-align: center; min-width: 0; }
+  .daybtn:hover { border-color: var(--muted); }
+  .daybtn[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .daybtn.today:not([aria-pressed="true"]) { border-color: var(--s1); }
+  .daybtn .dn { font-size: 12px; opacity: .75; } .daybtn .dd { font-size: 17px; font-weight: 600; line-height: 1.2; }
+  .daybtn .dt { font-size: 11px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .daybtn .ds { font-size: 12px; height: 16px; }
+  .sess { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 10px; }
+  .sess .t { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; color: var(--text2); display: inline-flex; align-items: center; gap: 5px; }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 14px; margin-top: 6px; }
+  .kv div span { display: block; color: var(--muted); font-size: 12px; } .kv div b { font-size: 16px; font-weight: 600; }
+  .exr { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-top: 1px solid var(--grid); }
+  .exr:first-of-type { border-top: 0; } .exr .exs { text-align: right; white-space: nowrap; color: var(--text2); font-variant-numeric: tabular-nums; }
+  @media (max-width: 520px) { .exr { flex-wrap: wrap; } .exr .exs { text-align: left; white-space: normal; } }
+  .sec { font-size: 17px; font-weight: 600; margin: 28px 0 12px; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; font-size: 14px; }
+  .tablewrap { max-height: 260px; overflow: auto; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { position: sticky; top: 0; background: var(--card); color: var(--text2); font-weight: 600; }
+  #lock { max-width: 360px; margin: 18vh auto 0; text-align: center; }
+  #lock input[type=password], #lock input[type=text] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); margin: 12px 0 8px; }
+  #lock label { color: var(--muted); font-size: 13px; display: block; margin-bottom: 12px; }
+  #err { color: var(--bad); min-height: 1.4em; font-size: 14px; }
+  .hidden { display: none !important; }
+  .good { color: var(--good); } .bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="lock">
+  <h1>Training Dashboard</h1>
+  <p class="sub">Private data, decrypted in your browser. Enter the passphrase.</p>
+  <form id="lockForm" autocomplete="off">
+    <input id="pass" type="password" placeholder="Passphrase" autocomplete="current-password" aria-label="Passphrase" autofocus>
+    <label><input id="remember" type="checkbox"> Remember on this device</label>
+    <button class="btn on" type="submit">Unlock</button>
+    <div id="err" role="alert"></div>
+  </form>
+</section>
+
+<main id="app" class="hidden">
+  <header>
+    <div><h1>Training Dashboard</h1><div class="sub" id="updated"></div></div>
+    <div style="display:flex;gap:6px"><button class="btn" id="theme" title="Toggle theme">Theme</button><button class="btn" id="lockBtn">Lock</button></div>
+  </header>
+  <nav id="tabs" aria-label="Sections"></nav>
+  <div class="controls" id="rangeBar"><span class="lbl">Range</span></div>
+  <div id="view"></div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+"use strict";
+/* ---------- decrypt ---------- */
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(blob, pass) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(blob.salt), iterations: blob.iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(blob.iv) }, key, b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+const $ = s => document.querySelector(s);
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+                set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+                del: k => { try { localStorage.removeItem(k); } catch {} } };
+
+let D = null, tab = "biking", rangeWeeks = 8, charts = [];
+
+async function unlock(pass, remember) {
+  const btn = $("#lockForm button"); btn.disabled = true; btn.textContent = "Unlocking…";
+  $("#err").textContent = "";
+  try {
+    const blob = await (await fetch("data.enc.json?" + Date.now())).json();
+    D = await decrypt(blob, pass);
+  } catch (e) {
+    $("#err").textContent = "Wrong passphrase (or data not published yet).";
+    store.del("pp"); btn.disabled = false; btn.textContent = "Unlock";
+    return false;
+  }
+  if (remember) store.set("pp", pass);
+  $("#lock").classList.add("hidden"); $("#app").classList.remove("hidden");
+  prep(); render();
+  return true;
+}
+$("#lockForm").addEventListener("submit", e => { e.preventDefault(); unlock($("#pass").value, $("#remember").checked); });
+$("#lockBtn").addEventListener("click", () => { store.del("pp"); location.reload(); });
+$("#theme").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme;
+  const next = cur === "dark" ? "light" : cur === "light" ? "" : "dark";
+  if (next) document.documentElement.dataset.theme = next; else delete document.documentElement.dataset.theme;
+  store.set("theme", next);
+  if (D) render();
+});
+{ const t = store.get("theme"); if (t) document.documentElement.dataset.theme = t; }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => D && render());
+{ const pp = store.get("pp"); if (pp) unlock(pp, true); }
+
+/* ---------- helpers ---------- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const DAY = 864e5;
+const ms = iso => Date.parse(iso + "T00:00:00Z");
+const isoOf = t => new Date(t).toISOString().slice(0, 10);
+/* Chart x positions are LOCAL midnight so they line up with the time axis and tooltips, which format in the viewer's
+   timezone. (ms() is UTC midnight: fine for day arithmetic, but it plotted every point at 8 PM the previous day.) */
+const cx = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).getTime(); };
+const isoLocal = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const weekStart = iso => { const t = ms(iso), dow = (new Date(t).getUTCDay() + 6) % 7; return isoOf(t - dow * DAY); };
+const short = iso => new Date(ms(iso)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const sum = a => a.reduce((x, y) => x + y, 0);
+const avg = a => a.length ? sum(a) / a.length : null;
+const round = (x, d = 0) => x == null ? null : Math.round(x * 10 ** d) / 10 ** d;
+const fmtN = (x, d = 0) => x == null ? "–" : x.toLocaleString("en-US", { maximumFractionDigits: d });
+const last = a => a[a.length - 1];
+const LB_PER_KG = 2.20462;
+
+let LATEST = "";   // newest date with real data; "today" for the purposes of ranges
+function prep() {
+  D.bike_all = D.bike.slice();   // the plan, including future days; the charts below use only rides that happened
+  D.bike = D.bike.filter(r => r.power != null || r.hr.length || r.kj != null);  // drop future planned rows
+  const dates = [...D.bike.map(r => r.date), ...D.health.map(h => h.date), ...D.lift_sessions.map(l => l.date), ...D.leetcode.log.map(l => l.date)];
+  LATEST = dates.sort().pop() || isoOf(Date.now());
+  estimateKj();
+  $("#updated").textContent = "Updated " + new Date(D.generated).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+}
+const cutoff = () => rangeWeeks ? isoOf(ms(LATEST) - rangeWeeks * 7 * DAY) : "0000";
+const inRange = r => r.date >= cutoff();
+const upTo = (arr, n) => arr.slice(-n);
+
+/* weight (lb) known on a date: latest reading on or before it (health tab + bike log) */
+function weightOn(iso) {
+  const w = [...D.health.filter(h => h.weight != null).map(h => [h.date, h.weight]), ...D.bike.filter(b => b.weight != null).map(b => [b.date, b.weight])].sort();
+  let v = null; for (const [d, x] of w) { if (d <= iso) v = x; }
+  return v ?? (w[0] && w[0][1]);
+}
+const ftpTests = () => D.bike.filter(r => /test/i.test(r.type) && r.power).map(r => {
+  const ftp = r.power * 0.95, lb = weightOn(r.date);
+  return { date: r.date, ftp, rel: lb ? ftp / (lb / LB_PER_KG) : null };
+});
+const GOAL = { rel: 3.0, date: "2026-11-26" };   // Thanksgiving
+
+/* ---------- bikes, estimated kJ, estimated calories ---------- */
+const BIKES = ["Matrix bike 1", "Matrix bike 2", "Matrix bike ?", "Outside"];   // fixed colour slot per bike
+const bikeOf = r => r.bike || "Unlabeled";
+const bikeSlot = b => { const i = BIKES.indexOf(b); return i < 0 ? 4 : i; };
+const median = a => { const v = a.filter(x => x != null).sort((x, y) => x - y); if (!v.length) return null; const m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+const restingOn = iso => { const h = D.health.filter(x => x.resting_hr != null && x.date <= iso); return h.length ? last(h).resting_hr : 45; };
+
+/* A ride with no watts gets an ESTIMATED kJ: the median power of your recent rides of the same type, scaled by how
+   much harder/easier the heart worked (heart-rate-reserve ratio vs. those rides). Always flagged as an estimate. */
+function estimateKj() {
+  const withPower = D.bike.filter(r => r.power != null && r.duration);
+  D.bike.forEach(r => {
+    r.kj_est = false; r.kj_final = r.kj;
+    if (r.kj != null || !r.duration) return;
+    const type = r.type || "Endurance";
+    const refs = withPower.filter(x => (x.type || "Endurance") === type && x.date <= r.date).slice(-6);
+    const pool = refs.length ? refs : withPower.filter(x => (x.type || "Endurance") === type).slice(0, 6);
+    if (!pool.length) return;
+    let w = median(pool.map(x => x.power));
+    const rhr = restingOn(r.date), refHr = median(pool.map(x => x.hr_avg));
+    if (r.hr_avg != null && refHr != null && refHr > rhr + 10) w *= Math.max(0.5, Math.min(1.4, (r.hr_avg - rhr) / (refHr - rhr)));
+    r.kj_final = Math.round(w * r.duration * 60 / 1000); r.kj_est = true;
+  });
+}
+
+/* Estimated calories per day (not Fitbit's activity estimate). Everything is a stated assumption:
+   resting = Mifflin-St Jeor BMR from your height, age, sex and that day's weight (profile lives in the encrypted data)
+   bike    = kJ / 0.24 / 4.184 (about 24% gross efficiency), minus the resting burn during the ride so it isn't counted twice
+   lifts   = (4.5 METs - 1) x body kg x hours, using the watch's session length (60 min if a day has sets but no length)
+   steps   = 0.57 kcal per lb per mile, 2,200 steps per mile
+   digestion (thermic effect of food) = 10% of everything above
+   Without a profile, resting is omitted and the bike is left gross (active-only view). */
+const KCAL = { tef: 0.10, bikePerKj: 1 / 0.24 / 4.184, liftMet: 4.5, walkKcalPerLbMile: 0.57, stepsPerMile: 2200 };
+function bmrOn(iso) {
+  const p = D.profile, lb = weightOn(iso);
+  if (!p || !lb) return null;
+  return 10 * lb / LB_PER_KG + 6.25 * p.height_cm - 5 * p.age + p.sex_const;
+}
+function dailyCalories() {
+  const act = new Map(); const get = d => { if (!act.has(d)) act.set(d, { bike: 0, lift: 0, steps: 0, est: false }); return act.get(d); };
+  D.bike.forEach(r => {
+    if (r.kj_final == null) return;
+    const x = get(r.date), bmr = bmrOn(r.date);
+    x.bike += Math.max(0, r.kj_final * KCAL.bikePerKj - (bmr ? bmr / 1440 * (r.duration || 0) : 0));
+    x.est = x.est || r.kj_est;
+  });
+  const dur = {}; D.lift_sessions.forEach(l => { if (l.duration != null) dur[l.date] = (dur[l.date] || 0) + l.duration; });
+  new Set([...Object.keys(dur), ...D.lift_sets.map(x => x.date)]).forEach(d => {
+    const lb = weightOn(d) || 170, mins = dur[d] ?? 60;
+    get(d).lift += (KCAL.liftMet - 1) * (lb / LB_PER_KG) * (mins / 60);
+  });
+  D.health.forEach(h => { if (h.steps != null) get(h.date).steps += KCAL.walkKcalPerLbMile * (weightOn(h.date) || 170) * h.steps / KCAL.stepsPerMile; });
+  const first = [...act.keys()].sort()[0] || LATEST, out = [];
+  for (let t = ms(first); t <= ms(LATEST); t += DAY) {
+    const d = isoOf(t), x = act.get(d) || { bike: 0, lift: 0, steps: 0, est: false }, rest = bmrOn(d);
+    const base = (rest || 0) + x.bike + x.lift + x.steps, tef = rest == null ? null : KCAL.tef * base;
+    out.push({ date: d, rest: rest == null ? null : Math.round(rest), bike: Math.round(x.bike), lift: Math.round(x.lift), steps: Math.round(x.steps), tef: tef == null ? null : Math.round(tef), est: x.est,
+      total: Math.round(base + (tef || 0)) });
+  }
+  return out;
+}
+function calChart(id, o = {}) {
+  const rows = dailyCalories().filter(inRange), withRest = !!D.profile && o.rest;
+  const ds = [bars("Bike", rows.map(r => r.bike), 0), bars("Lifting", rows.map(r => r.lift), 1), bars("Steps", rows.map(r => r.steps), 2)];
+  if (withRest) { ds.unshift(bars("Resting", rows.map(r => r.rest), 0, { color: css("--line") })); ds.push(bars("Digestion (TEF)", rows.map(r => r.tef), 3)); }
+  draw(id, { type: "bar", data: { labels: rows.map(r => short(r.date)), datasets: ds },
+    options: baseOpts(true, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: "kcal", color: css("--muted") } } },
+      plugins: { tooltip: { callbacks: { footer: items => { const r = rows[items[0].dataIndex]; const t = withRest ? r.total : r.bike + r.lift + r.steps;
+        return "Total " + fmtN(t) + " kcal" + (r.est ? " (bike kJ partly estimated)" : "") + (r.date === LATEST ? " · day in progress" : ""); } } } } }) });
+}
+const CAL_NOTE = "Resting (Mifflin-St Jeor) + bike (kJ) + lifting (4.5 METs) + steps (0.57 kcal/lb/mile) + digestion (10%); activity counted above resting";
+const CAL_NOTE_ACTIVE = "Active calories only: bike (kJ), lifting (4.5 METs) and steps (0.57 kcal/lb/mile)";
+
+/* ---------- chart plumbing ---------- */
+const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
+const sc = i => css(SERIES[i]);
+function deepMerge(a, b) {
+  for (const k in b) a[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k]) ? deepMerge(a[k], b[k]) : b[k];
+  return a;
+}
+function baseOpts(multi, extra = {}) {
+  const text2 = css("--text2"), muted = css("--muted"), grid = css("--grid"), card = css("--card"), text = css("--text");
+  return deepMerge({
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: multi, position: "bottom", labels: { color: text2, usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } },
+      tooltip: { backgroundColor: card, titleColor: text, bodyColor: text2, borderColor: css("--line"), borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: muted, maxRotation: 0, autoSkipPadding: 12 }, border: { color: grid } },
+      y: { grid: { color: grid, lineWidth: 1 }, ticks: { color: muted }, border: { display: false } },
+    },
+  }, extra);
+}
+const timeX = (unit = "day") => ({ type: "time", time: { minUnit: "day", tooltipFormat: "MMM d, yyyy", displayFormats: { day: "MMM d", week: "MMM d", month: "MMM yyyy" } } });
+function line(label, pts, i, o = {}) {
+  const col = o.color || sc(i);
+  return { label, data: pts, borderColor: col, backgroundColor: col, borderWidth: o.width || 2, pointRadius: o.noDots ? 0 : 4, pointHoverRadius: 6,
+    pointBackgroundColor: col, pointBorderColor: css("--card"), pointBorderWidth: 2, tension: 0, spanGaps: true, ...o.extra };
+}
+function bars(label, data, i, o = {}) {
+  const col = o.color || sc(i);
+  return { label, data, backgroundColor: col, borderColor: css("--card"), borderWidth: 2, borderRadius: 4, borderSkipped: "bottom", maxBarThickness: 24, ...o.extra };
+}
+const pts = (rows, f) => rows.map(r => ({ x: cx(r.date), y: f(r) })).filter(p => p.y != null);
+
+function card(id, title, sub, o = {}) {
+  return `<section class="card"><div class="top"><div><h2>${title}</h2><p class="cs">${sub || ""}</p></div>
+    <button class="btn" data-table="${id}" aria-pressed="false">Table</button></div>
+    <div class="plot ${o.tall ? "tall" : ""}" id="p_${id}"><canvas id="c_${id}" role="img" aria-label="${title}"></canvas></div>
+    <div class="tablewrap hidden" id="t_${id}"></div></section>`;
+}
+function draw(id, config) {
+  const host = $("#p_" + id);
+  const n = config.data.datasets.reduce((a, d) => a + d.data.filter(v => v != null && (typeof v !== "object" || v.y != null)).length, 0);
+  if (!n) { host.innerHTML = '<div class="empty">No data in this range yet.</div>'; return; }
+  const xs = new Set(config.data.datasets.flatMap(d => d.data.map(v => v && v.x)).filter(x => typeof x === "number"));
+  if (xs.size === 1 && config.options.scales.x && config.options.scales.x.type === "time") {
+    const x = [...xs][0]; Object.assign(config.options.scales.x, { min: x - 3 * DAY, max: x + 3 * DAY });
+  }
+  // Series on a time axis have different dates, so "same index" would pair unrelated days (and title the tooltip
+  // with the wrong date). Pick the point nearest the cursor by date instead. Category charts share labels, so
+  // "index" is right for them.
+  if (config.options.scales.x && config.options.scales.x.type === "time") {
+    config.options.interaction = { mode: "nearest", axis: "x", intersect: false };
+    config.options.plugins.tooltip.mode = "nearest"; config.options.plugins.tooltip.axis = "x"; config.options.plugins.tooltip.intersect = false;
+  }
+  const ch = new Chart($("#c_" + id), config);
+  ch.$id = id; charts.push(ch);
+}
+function tableOf(ch) {
+  const rows = new Map(); const cols = ch.data.datasets.map(d => d.label);
+  const isTime = ch.config.options.scales.x && ch.config.options.scales.x.type === "time";
+  ch.data.datasets.forEach((d, si) => d.data.forEach((v, i) => {
+    const key = typeof v === "object" && v !== null ? (v.x ?? v.y) : ch.data.labels[i];
+    const val = typeof v === "object" && v !== null ? (ch.config.options.indexAxis === "y" ? v.x : v.y) : v;
+    if (!rows.has(key)) rows.set(key, {}); rows.get(key)[si] = val;
+  }));
+  const sorted = [...rows.entries()].sort((a, b) => (isTime ? a[0] - b[0] : 0));
+  const f = k => isTime ? short(isoLocal(k)) : k;
+  return `<table><thead><tr><th></th>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+    sorted.map(([k, v]) => `<tr><td>${f(k)}</td>${cols.map((_, i) => `<td>${v[i] == null ? "" : fmtN(v[i], 2)}</td>`).join("")}</tr>`).join("") + "</tbody></table>";
+}
+function wireTables() {
+  document.querySelectorAll("[data-table]").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.table, ch = charts.find(c => c.$id === id), box = $("#t_" + id), on = box.classList.toggle("hidden") === false;
+    b.setAttribute("aria-pressed", on); b.textContent = on ? "Chart" : "Table";
+    $("#p_" + id).classList.toggle("hidden", on);
+    if (on && ch) box.innerHTML = tableOf(ch);
+  }));
+}
+const tile = (k, v, d = "") => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
+const delta = (cur, ref, unit = "", upGood = true, d = 0) => {
+  if (cur == null || ref == null) return "";
+  const x = cur - ref; if (round(Math.abs(x), d) === 0) return `<span>same as 7-day avg</span>`;
+  const good = (x > 0) === upGood;
+  return `<span class="${good ? "good" : "bad"}">${x > 0 ? "▲" : "▼"} ${fmtN(Math.abs(x), d)}${unit}</span> vs 7-day avg`;
+};
+
+/* ---------- views ---------- */
+const TABS = { biking: "Biking", lifting: "Lifting", health: "Health", leetcode: "LeetCode" };
+const RANGES = [[4, "4w"], [8, "8w"], [12, "12w"], [0, "All"]];
+function render() {
+  charts.forEach(c => c.destroy()); charts = [];
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily; Chart.defaults.color = css("--muted");
+  $("#tabs").innerHTML = Object.entries(TABS).map(([k, v]) => `<button class="btn ${k === tab ? "on" : ""}" data-tab="${k}">${v}</button>`).join("");
+  $("#rangeBar").innerHTML = '<span class="lbl">Range</span>' + RANGES.map(([w, l]) => `<button class="btn ${w === rangeWeeks ? "on" : ""}" data-range="${w}">${l}</button>`).join("");
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+  document.querySelectorAll("[data-range]").forEach(b => b.onclick = () => { rangeWeeks = +b.dataset.range; render(); });
+  $("#view").innerHTML = ({ biking, lifting: lifts, health: healthTab, leetcode: career })[tab]();
+  ({ biking: bikingCharts, lifting: liftCharts, health: healthCharts, leetcode: careerCharts })[tab]();
+  wireTables();
+}
+
+/* --- shared chart builders --- */
+function ftpChart(id) {
+  const tests = ftpTests().filter(t => t.rel != null);
+  const t0 = tests[0], goalMs = cx(GOAL.date);
+  const bikeByDate = Object.fromEntries(D.bike.filter(r => /test/i.test(r.type)).map(r => [r.date, bikeOf(r)]));
+  const actual = tests.map(t => ({ x: cx(t.date), y: round(t.rel, 2), bike: bikeByDate[t.date] }));
+  const target = t0 ? [{ x: cx(t0.date), y: round(t0.rel, 2) }, { x: goalMs, y: GOAL.rel }] : [];
+  draw(id, { type: "line", data: { datasets: [
+    line("Relative FTP (W/kg)", actual, 0),
+    line("Path to goal", target, 0, { color: css("--muted"), width: 2, noDots: true, extra: { borderDash: [] } }),
+  ] }, options: baseOpts(true, { plugins: { tooltip: bikeTip }, scales: { x: timeX(), y: { suggestedMin: 2.2, suggestedMax: 3.2, ticks: { callback: v => v.toFixed(1) } } } }) });
+}
+function weeklyHours(id) {
+  const rows = D.bike.filter(inRange), weeks = [...new Set(rows.map(r => weekStart(r.date)))].sort();
+  const types = ["Endurance", "Sweet Spot", "Threshold", "VO2max", "Test"].filter(t => rows.some(r => r.type === t));
+  const other = rows.filter(r => !types.includes(r.type));
+  const ds = types.map(t => bars(t, weeks.map(w => round(sum(rows.filter(r => r.type === t && weekStart(r.date) === w).map(r => r.duration || 0)) / 60, 1)), ["Endurance", "Sweet Spot", "Threshold", "VO2max", "Test"].indexOf(t)));
+  if (other.length) ds.push(bars("Other", weeks.map(w => round(sum(other.filter(r => weekStart(r.date) === w).map(r => r.duration || 0)) / 60, 1)), 7));
+  draw(id, { type: "bar", data: { labels: weeks.map(short), datasets: ds }, options: baseOpts(true, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: "hours", color: css("--muted") } } } }) });
+}
+function weeklyKj(id) {
+  const rows = D.bike.filter(inRange).filter(r => r.kj_final != null), weeks = [...new Set(rows.map(r => weekStart(r.date)))].sort();
+  const tot = (w, est) => round(sum(rows.filter(r => weekStart(r.date) === w && r.kj_est === est).map(r => r.kj_final)));
+  const estimated = bars("Estimated (no watts)", weeks.map(w => tot(w, true)), 1);
+  draw(id, { type: "bar", data: { labels: weeks.map(short), datasets: [bars("Measured", weeks.map(w => tot(w, false)), 0), estimated] },
+    options: baseOpts(true, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: "kJ", color: css("--muted") } } },
+      plugins: { tooltip: { callbacks: { footer: items => "Week total " + fmtN(sum(items.map(i => i.parsed.y || 0))) + " kJ" } } } }) });
+}
+
+
+/* ---------- workouts: today, with day-by-day navigation ---------- */
+const localIso = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+let selDay = null;
+const TYPE_SLOT = { "Endurance": 0, "Sweet Spot": 1, "Threshold": 2, "VO2max": 3, "Test": 4 };
+const TYPE_SHORT = { "Endurance": "Z2", "Sweet Spot": "SS", "Threshold": "Thr", "VO2max": "VO2", "Test": "Test" };
+const isDone = r => r.power != null || r.hr.length > 0 || r.kj != null;
+const onDay = iso => D.bike_all.filter(r => r.date === iso);
+const addDays = (iso, n) => isoOf(ms(iso) + n * DAY);
+const longDay = iso => new Date(ms(iso)).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+function relative(iso, today) {
+  const n = Math.round((ms(iso) - ms(today)) / DAY);
+  return n === 0 ? "Today" : n === 1 ? "Tomorrow" : n === -1 ? "Yesterday" : n > 0 ? `In ${n} days` : `${-n} days ago`;
+}
+function dayStatus(iso, today) {
+  const rows = onDay(iso);
+  if (!rows.length) return { k: "rest", icon: "", label: "Rest" };
+  if (rows.some(isDone)) return { k: "done", icon: "✓", label: "Done" };
+  return iso < today ? { k: "missed", icon: "–", label: "Not logged" } : { k: "planned", icon: "○", label: "Planned" };
+}
+function sessionHtml(r, today) {
+  const done = isDone(r), extra = /extra session/i.test(r.planned), slot = TYPE_SLOT[r.type];
+  const title = extra ? "Extra session" : (r.planned || r.type || "Workout");
+  const chips = [r.type ? `<span class="chip"><i style="background:${slot != null ? sc(slot) : css("--muted")}"></i>${r.type}</span>` : "",
+    r.phase ? `<span class="chip">${r.phase}</span>` : "", r.bike ? `<span class="chip">${r.bike}</span>` : ""].join("");
+  const kj = r.kj_final != null ? fmtN(r.kj_final) + (r.kj_est ? " (est.)" : "") : null;
+  const kv = (k, v) => v == null || v === "" ? "" : `<div><span>${k}</span><b>${v}</b></div>`;
+  const plan = kv("Planned", r.duration && !done ? r.duration + " min" : "");
+  const actual = done ? kv("Duration", r.duration ? r.duration + " min" : "") + kv("Avg power", r.power != null ? r.power + " W" : "")
+    + kv(r.hr.length > 1 ? "Interval HR" : "Avg HR", r.hr.length ? r.hr.join(", ") + " bpm" : "") + kv("Energy", kj ? kj + " kJ" : "") + kv("Cadence", r.rpm != null ? r.rpm + " rpm" : "") : "";
+  const st = done ? "✓ Done" : r.date < today ? "– Not logged" : "○ Planned";
+  return `<div class="sess"><div class="chips">${chips}<span class="chip">${st}</span></div><p class="t">${title}</p>
+    ${!done && r.duration ? `<div class="kv">${plan}</div>` : ""}${done ? `<div class="kv">${actual}</div>` : ""}</div>`;
+}
+function workoutsCard() { return '<section class="card wk" id="wk"></section>'; }
+function renderWorkouts() {
+  const box = $("#wk"); if (!box) return;
+  const today = localIso(); selDay = selDay || today;
+  const ws = weekStart(selDay), days = Array.from({ length: 7 }, (_, i) => addDays(ws, i)), rows = onDay(selDay);
+  const strip = days.map(d => {
+    const rs = onDay(d), st = dayStatus(d, today), type = rs.length ? (TYPE_SHORT[rs[0].type] || (/extra/i.test(rs[0].planned) ? "Extra" : "–")) : "Rest";
+    const dn = new Date(ms(d)).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+    return `<button class="daybtn ${d === today ? "today" : ""}" data-day="${d}" aria-pressed="${d === selDay}" aria-label="${longDay(d)}, ${type}, ${st.label}">
+      <div class="dn">${dn}</div><div class="dd">${+d.slice(8)}</div><div class="dt">${type}</div><div class="ds">${st.icon}</div></button>`;
+  }).join("");
+  box.innerHTML = `<div class="hd"><div><h2>Workouts</h2><p class="cs" style="margin:0">${longDay(selDay)} · ${relative(selDay, today)}</p></div>
+      <div class="nav"><button class="btn" data-step="-1" aria-label="Previous day">‹</button><button class="btn" data-step="0">Today</button><button class="btn" data-step="1" aria-label="Next day">›</button></div></div>
+    <div class="wkstrip">${strip}</div>
+    ${rows.length ? rows.map(r => sessionHtml(r, today)).join("") : '<div class="sess"><p class="t" style="margin:0">Rest day</p><p class="cs" style="margin:4px 0 0">Nothing planned.</p></div>'}`;
+}
+document.addEventListener("click", e => {
+  const day = e.target.closest("[data-day]"), step = e.target.closest("[data-step]");
+  if (day) { selDay = day.dataset.day; renderWorkouts(); }
+  else if (step && step.closest("#wk")) { const n = +step.dataset.step; selDay = n === 0 ? localIso() : addDays(selDay || localIso(), n); renderWorkouts(); }
+});
+document.addEventListener("keydown", e => {
+  if (!$("#wk") || /input|select|textarea/i.test(e.target.tagName)) return;
+  if (e.key === "ArrowLeft") { selDay = addDays(selDay || localIso(), -1); renderWorkouts(); }
+  if (e.key === "ArrowRight") { selDay = addDays(selDay || localIso(), 1); renderWorkouts(); }
+});
+
+/* --- tiles --- */
+function bikeTiles() {
+  const wk = weekStart(LATEST), thisWeek = D.bike.filter(r => weekStart(r.date) === wk);
+  const hrs = sum(thisWeek.map(r => r.duration || 0)) / 60, kj = sum(thisWeek.map(r => r.kj_final || 0)), kjEst = sum(thisWeek.filter(r => r.kj_est).map(r => r.kj_final));
+  const tests = ftpTests().filter(t => t.rel != null), curRel = tests.length ? last(tests).rel : null;
+  const startRel = tests.length ? tests[0].rel : 2.5;
+  const pct = curRel ? Math.max(0, Math.min(100, (curRel - startRel) / (GOAL.rel - startRel) * 100)) : 0;
+  const daysLeft = Math.max(0, Math.round((ms(GOAL.date) - ms(LATEST)) / DAY));
+  return `<div class="tiles">
+    <div class="tile hero"><div><div class="k">Relative FTP</div><div class="v">${curRel ? curRel.toFixed(2) : "–"} <span class="sub">W/kg</span></div></div>
+      <div class="d" style="flex:1;min-width:200px">Goal ${GOAL.rel.toFixed(1)} by Thanksgiving · ${daysLeft} days left
+        <div class="meter" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+        <span class="sub">${Math.round(pct)}% of the way from ${startRel.toFixed(2)}</span></div></div>
+    ${tile("This week · hours", fmtN(hrs, 1), `${thisWeek.length} rides`)}
+    ${tile("This week · kJ", fmtN(kj), kjEst ? `incl. ~${fmtN(kjEst)} estimated (no watts)` : "all measured")}
+  </div>`;
+}
+function healthTiles() {
+  const h = D.health, l7 = upTo(h, 7), cur = last(h) || {};
+  const rhr7 = avg(l7.map(x => x.resting_hr).filter(v => v != null)), hrv7 = avg(l7.map(x => x.hrv).filter(v => v != null));
+  const sleep7 = avg(l7.map(x => x.sleep_hrs).filter(v => v != null)), steps7 = avg(l7.slice(0, -1).map(x => x.steps).filter(v => v != null));
+  const w = [...h.filter(x => x.weight != null).map(x => [x.date, x.weight]), ...D.bike.filter(x => x.weight != null).map(x => [x.date, x.weight])].sort();
+  const cal = dailyCalories().filter(d => d.date < LATEST && d.date >= isoOf(ms(LATEST) - 7 * DAY));   // last 7 complete days
+  const burn = D.profile ? avg(cal.map(d => d.total)) : avg(cal.map(d => d.bike + d.lift + d.steps));
+  return `<div class="tiles">
+    ${tile("Resting HR", cur.resting_hr != null ? cur.resting_hr + " bpm" : "–", delta(cur.resting_hr, rhr7, " bpm", false))}
+    ${tile("HRV", cur.hrv != null ? fmtN(cur.hrv, 0) + " ms" : "–", delta(cur.hrv, hrv7, " ms", true))}
+    ${tile("Sleep · 7-day avg", sleep7 != null ? fmtN(sleep7, 1) + " h" : "–", cur.sleep_hrs != null ? `last night ${fmtN(cur.sleep_hrs, 1)} h` : "")}
+    ${tile("Steps · 7-day avg", steps7 != null ? fmtN(steps7) : "–", "")}
+    ${tile("Weight", w.length ? fmtN(last(w)[1], 1) + " lb" : "–", "")}
+    ${tile(D.profile ? "Est. total burn" : "Est. active burn", burn != null ? fmtN(burn) + " kcal" : "–", D.profile ? "per day, last 7 full days" : "per day · add height & sex for total")}
+  </div>`;
+}
+function biking() { return workoutsCard() + bikeTiles() + training(); }
+function bikingCharts() { renderWorkouts(); trainingCharts(); }
+function healthTab() { return healthTiles() + `<div class="grid">${card("h_cal", D.profile ? "Estimated total calories burned" : "Estimated active calories", D.profile ? CAL_NOTE : CAL_NOTE_ACTIVE)}</div><h2 class="sec">Recovery &amp; body</h2>` + recovery(); }
+function healthCharts() { calChart("h_cal", { rest: true }); recoveryCharts(); }
+
+/* --- training --- */
+function training() {
+  return `<div class="grid">${card("t_ftp", "Relative FTP vs. goal", "W/kg at each test: FTP = 95% of the 20-min average, divided by body weight")}${card("t_hours", "Weekly hours", "By session type")}
+    ${card("t_kj", "Weekly energy", "Kilojoules per week; rides without watts are estimated from your similar rides and heart rate")}${card("t_power", "Average power", "Per ride, by session type")}
+    ${card("t_ss", "Sweet-spot interval HR", "Average HR across each session's intervals, split by bike (readings differ between machines)")}${card("t_ef", "Endurance efficiency", "Watts per heartbeat on Z2 rides, split by bike (higher = more aerobic fitness)")}</div>`;
+}
+const bikeTip = { callbacks: { afterLabel: c => c.raw && c.raw.bike ? "on " + c.raw.bike : "" } };
+function byBike(rows, fn) {   // one line per bike so differently-reading machines are never mixed in one series
+  const names = [...new Set(rows.map(bikeOf))].sort((a, b) => bikeSlot(a) - bikeSlot(b));
+  return names.map(n => line(n, rows.filter(r => bikeOf(r) === n).map(r => ({ x: cx(r.date), y: fn(r) })).filter(p => p.y != null), bikeSlot(n))).filter(d => d.data.length);
+}
+function trainingCharts() {
+  ftpChart("t_ftp"); weeklyHours("t_hours"); weeklyKj("t_kj");
+  const r = D.bike.filter(inRange), types = ["Endurance", "Sweet Spot", "Threshold", "VO2max"];
+  const withBike = (rows, f) => rows.map(x => ({ x: cx(x.date), y: f(x), bike: bikeOf(x) })).filter(p => p.y != null);
+  draw("t_power", { type: "line", data: { datasets: types.map((t, i) => line(t, withBike(r.filter(x => x.type === t), x => x.power), i)).filter(d => d.data.length) },
+    options: baseOpts(true, { plugins: { tooltip: bikeTip }, scales: { x: timeX(), y: { title: { display: true, text: "watts", color: css("--muted") } } } }) });
+  const ss = r.filter(x => x.type === "Sweet Spot" && x.hr.length);
+  draw("t_ss", { type: "line", data: { datasets: byBike(ss, x => round(x.hr_avg, 1)) },
+    options: baseOpts(true, { scales: { x: timeX(), y: { title: { display: true, text: "bpm", color: css("--muted") } } } }) });
+  const ef = r.filter(x => x.type === "Endurance" && x.power && x.hr_avg);
+  draw("t_ef", { type: "line", data: { datasets: byBike(ef, x => round(x.power / x.hr_avg, 2)) },
+    options: baseOpts(true, { scales: { x: timeX(), y: { title: { display: true, text: "W / bpm", color: css("--muted") } } } }) });
+}
+
+/* --- recovery --- */
+function recovery() {
+  return `<div class="grid">${card("r_rhr", "Resting heart rate", "Lower and steady is better; a sustained rise can flag fatigue or illness")}
+    ${card("r_hrv", "Heart rate variability", "Nightly average (ms) with 7-day average")}
+    ${card("r_sleep", "Sleep", "Hours by stage")}${card("r_weight", "Weight", "lb")}
+    ${card("r_steps", "Steps", "Daily total (today is still in progress)")}${card("r_resp", "Respiratory rate", "Breaths per minute overnight")}
+    ${card("r_spo2", "Blood oxygen", "Nightly average SpO2 (%)")}</div>`;
+}
+function rolling(rows, key, n = 7) {
+  return rows.map((r, i) => { const w = rows.slice(Math.max(0, i - n + 1), i + 1).map(x => x[key]).filter(v => v != null); return { x: cx(r.date), y: w.length >= 3 ? round(avg(w), 1) : null }; }).filter(p => p.y != null);
+}
+function recoveryCharts() {
+  const h = D.health.filter(inRange), all = D.health;
+  const yt = t => ({ title: { display: true, text: t, color: css("--muted") } });
+  draw("r_rhr", { type: "line", data: { datasets: [line("Resting HR", pts(h, x => x.resting_hr), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: yt("bpm") } }) });
+  const roll = rolling(all, "hrv").filter(p => p.x >= cx(cutoff()));
+  draw("r_hrv", { type: "line", data: { datasets: [line("HRV", pts(h, x => x.hrv), 0, { width: 1, extra: { pointRadius: 3 } }), line("7-day average", roll, 1, { noDots: true })] }, options: baseOpts(true, { scales: { x: timeX(), y: yt("ms") } }) });
+  const s = h.filter(x => x.sleep_hrs != null), lab = s.map(x => short(x.date));
+  draw("r_sleep", { type: "bar", data: { labels: lab, datasets: [["Deep", "deep"], ["REM", "rem"], ["Light", "light"], ["Awake", "awake"]].map(([n, k], i) => bars(n, s.map(x => round((x[k] || 0) / 60, 2)), i)) },
+    options: baseOpts(true, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: "hours", color: css("--muted") } } } }) });
+  draw("r_weight", { type: "line", data: { datasets: [line("Weight", [...pts(h, x => x.weight), ...pts(D.bike.filter(inRange), x => x.weight)].sort((a, b) => a.x - b.x).filter((p, i, a) => !i || p.x !== a[i - 1].x), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: yt("lb") } }) });
+  const st = h.filter(x => x.steps != null);
+  draw("r_steps", { type: "bar", data: { labels: st.map(x => short(x.date)), datasets: [bars("Steps", st.map(x => x.steps), 0)] }, options: baseOpts(false, { scales: { y: { beginAtZero: true } } }) });
+  draw("r_resp", { type: "line", data: { datasets: [line("Respiratory rate", pts(h, x => x.resp), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: yt("breaths/min") } }) });
+  draw("r_spo2", { type: "line", data: { datasets: [line("SpO2", pts(h, x => x.spo2), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: { ...yt("%"), suggestedMin: 90, suggestedMax: 100 } } }) });
+}
+
+
+/* ---------- the lift of the day: the program for the selected date ---------- */
+let liftDay = null;
+const isPull = e => /chin|pull-?up/i.test(e);
+const planOn = iso => (D.lift_plan || []).filter(g => g.date === iso);
+const liftLogged = g => g.rows.some(r => String(r.r).trim() !== "" || String(r.w).trim() !== "");
+function liftStatus(iso, today) {
+  const gs = planOn(iso);
+  if (!gs.length) return { icon: "", label: "Rest", short: "Rest" };
+  const done = gs.some(liftLogged) || D.lift_sessions.some(s => s.date === iso);
+  return { icon: done ? "✓" : iso < today ? "–" : "○", label: done ? "Done" : iso < today ? "Not logged" : "Planned", short: gs[0].day.replace("Day ", "D") };
+}
+function exerciseBlocks(g) {
+  const out = [];
+  g.rows.forEach(r => { const k = r.b + "|" + r.e; let x = out.find(o => o.k === k); if (!x) out.push(x = { k, b: r.b, e: r.e, n: r.n, sets: [] }); x.sets.push(r); });
+  return out;
+}
+function setsText(sets) {
+  const ts = sets.map(s => s.t), same = ts.every(t => t === ts[0]), unit = sets[0].u, load = sets[0].l;
+  const t = same ? (sets.length > 1 ? `${sets.length} × ${ts[0]}` : `${ts[0]}`) : ts.join(" → ");
+  return t + (unit ? " " + unit : "") + (load ? " · " + load : "");
+}
+function liftExerciseHtml(x) {
+  const logged = x.sets.filter(s => String(s.r).trim() !== "" || String(s.w).trim() !== "");
+  const lg = logged.length ? `<div class="cs" style="margin:2px 0 0">Logged: ${logged.map(s => `${String(s.w).trim() || "–"} × ${String(s.r).trim() || "–"}`).join(", ")}</div>` : "";
+  const note = x.n ? `<div class="cs" style="margin:2px 0 0">${x.n}</div>` : "";
+  return `<div class="exr"><div><b>${x.b ? x.b + " · " : ""}${x.e}</b>${isPull(x.e) ? ' <span class="chip">Pull-up</span>' : ""}${note}${lg}</div><div class="exs">${setsText(x.sets)}</div></div>`;
+}
+function pullSession(g) {
+  const names = g.rows.map(r => r.e).join("|");
+  return /Descending Ladder/i.test(names) ? "Pull-ups · Session 1: descending ladder" : /Max Set/i.test(names) ? "Pull-ups · Session 2: overreach + EMOM" : isPull(names) ? "Includes pull-ups" : "";
+}
+function liftDayCard() { return '<section class="card wk" id="lwk"></section>'; }
+function renderLiftDay() {
+  const box = $("#lwk"); if (!box) return;
+  const today = localIso(); liftDay = liftDay || today;
+  const ws = weekStart(liftDay), days = Array.from({ length: 7 }, (_, i) => addDays(ws, i)), gs = planOn(liftDay);
+  const strip = days.map(d => {
+    const st = liftStatus(d, today), dn = new Date(ms(d)).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+    return `<button class="daybtn ${d === today ? "today" : ""}" data-lday="${d}" aria-pressed="${d === liftDay}" aria-label="${longDay(d)}, ${st.short}, ${st.label}">
+      <div class="dn">${dn}</div><div class="dd">${+d.slice(8)}</div><div class="dt">${st.short}</div><div class="ds">${st.icon}</div></button>`;
+  }).join("");
+  const sessions = gs.map(g => {
+    const ps = pullSession(g);
+    return `<div class="sess"><div class="chips"><span class="chip">Week ${g.week}</span><span class="chip">${g.day}</span>${ps ? `<span class="chip">${ps}</span>` : ""}</div>${exerciseBlocks(g).map(liftExerciseHtml).join("")}</div>`;
+  }).join("");
+  box.innerHTML = `<div class="hd"><div><h2>Lift of the day</h2><p class="cs" style="margin:0">${longDay(liftDay)} · ${relative(liftDay, today)}</p></div>
+      <div class="nav"><button class="btn" data-lstep="-1" aria-label="Previous day">‹</button><button class="btn" data-lstep="0">Today</button><button class="btn" data-lstep="1" aria-label="Next day">›</button></div></div>
+    <div class="wkstrip">${strip}</div>
+    ${sessions || '<div class="sess"><p class="t" style="margin:0">Rest day</p><p class="cs" style="margin:4px 0 0">No lift scheduled.</p></div>'}`;
+}
+document.addEventListener("click", e => {
+  const day = e.target.closest("[data-lday]"), step = e.target.closest("[data-lstep]");
+  if (day) { liftDay = day.dataset.lday; renderLiftDay(); }
+  else if (step && step.closest("#lwk")) { const n = +step.dataset.lstep; liftDay = n === 0 ? localIso() : addDays(liftDay || localIso(), n); renderLiftDay(); }
+});
+document.addEventListener("keydown", e => {
+  if (!$("#lwk") || /input|select|textarea/i.test(e.target.tagName)) return;
+  if (e.key === "ArrowLeft") { liftDay = addDays(liftDay || localIso(), -1); renderLiftDay(); }
+  if (e.key === "ArrowRight") { liftDay = addDays(liftDay || localIso(), 1); renderLiftDay(); }
+});
+
+/* --- lifts --- */
+const e1rm = (w, r) => r > 12 ? null : w * (1 + r / 30);   // Epley
+function liftNames() {
+  const c = {}; D.lift_sets.forEach(s => c[s.exercise] = (c[s.exercise] || 0) + 1);
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+}
+let liftPick = null;
+function lifts() {
+  const names = liftNames();
+  if (!liftPick || !names.includes(liftPick)) liftPick = ["squat", "pull", "dip"].map(k => names.find(n => n.toLowerCase().includes(k))).find(Boolean) || names[0];
+  const ls = D.lift_sessions.filter(inRange), done = new Set(D.lift_sets.filter(inRange).map(x => x.date));
+  const tiles = `<div class="tiles">${tile("Sessions", Math.max(ls.length, done.size), "in this range")}
+    ${tile("Avg length", ls.length ? fmtN(avg(ls.map(x => x.duration).filter(v => v != null)), 0) + " min" : "–", "")}
+    ${tile("Avg heart rate", ls.length ? fmtN(avg(ls.map(x => x.hr).filter(v => v != null)), 0) + " bpm" : "–", "")}
+    ${tile("Pull-up max", D.settings && D.settings.pullup_max != null ? D.settings.pullup_max + " reps" : "–", "best bodyweight set (override in sheet cell T3)")}</div>`;
+  return liftDayCard() + tiles + `<div class="controls"><span class="lbl">Exercise</span><select id="liftSel" class="btn" aria-label="Exercise">${names.map(n => `<option ${n === liftPick ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+  <div class="grid">${card("l_pu", "Pull-up progress", "Best bodyweight set per session (reps)")}${card("l_1rm", "Estimated 1-rep max", "Best set per day, Epley formula (weight × (1 + reps/30))")}${card("l_vol", "Session volume", "Total weight × reps per day, all exercises")}
+    ${card("l_dur", "Lifting session length", "Minutes, from your watch")}${card("l_hr", "Lifting heart rate", "Average bpm per session")}</div>`;
+}
+function liftCharts() {
+  renderLiftDay();
+  const pu = {}; (D.lift_plan || []).filter(g => inRange(g)).forEach(g => g.rows.forEach(r => {
+    const reps = parseFloat(r.r);
+    if (isPull(r.e) && /^bw$/i.test(String(r.w).trim()) && !isNaN(reps) && (!pu[g.date] || reps > pu[g.date])) pu[g.date] = reps;
+  }));
+  draw("l_pu", { type: "line", data: { datasets: [line("Best bodyweight set", Object.entries(pu).sort().map(([d, v]) => ({ x: cx(d), y: v })), 0)] },
+    options: baseOpts(false, { scales: { x: timeX(), y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: "reps", color: css("--muted") } } } }) });
+  $("#liftSel") && ($("#liftSel").onchange = e => { liftPick = e.target.value; render(); });
+  const s = D.lift_sets.filter(inRange), yt = t => ({ title: { display: true, text: t, color: css("--muted") } });
+  const best = {}; s.filter(x => x.exercise === liftPick).forEach(x => { const v = e1rm(x.weight, x.reps); if (v != null && (!best[x.date] || v > best[x.date])) best[x.date] = v; });
+  draw("l_1rm", { type: "line", data: { datasets: [line(liftPick || "Est. 1RM", Object.entries(best).sort().map(([d, v]) => ({ x: cx(d), y: round(v, 1) })), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: yt("lb") } }) });
+  const vol = {}; s.forEach(x => vol[x.date] = (vol[x.date] || 0) + x.weight * x.reps);
+  const vd = Object.keys(vol).sort();
+  draw("l_vol", { type: "bar", data: { labels: vd.map(short), datasets: [bars("Volume (lb)", vd.map(d => Math.round(vol[d])), 1)] }, options: baseOpts(false, { scales: { y: { beginAtZero: true } } }) });
+  const ls = D.lift_sessions.filter(inRange);
+  draw("l_dur", { type: "bar", data: { labels: ls.filter(x => x.duration != null).map(x => short(x.date)), datasets: [bars("Minutes", ls.filter(x => x.duration != null).map(x => x.duration), 2)] }, options: baseOpts(false, { scales: { y: { beginAtZero: true } } }) });
+  draw("l_hr", { type: "line", data: { datasets: [line("Avg HR", pts(ls, x => x.hr), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: yt("bpm") } }) });
+}
+
+/* --- career --- */
+function streak(dates) {
+  const set = new Set(dates); let n = 0, t = ms(LATEST);
+  if (!set.has(isoOf(t))) t -= DAY;         // today not solved yet doesn't break the streak
+  while (set.has(isoOf(t))) { n++; t -= DAY; }
+  return n;
+}
+function career() {
+  const lc = D.leetcode, log = lc.log, solved = new Set(log.map(x => x.lc)).size;
+  const first = log.filter(x => /first/i.test(x.result)).length;
+  const vids = log.filter(x => x.video).length, ar = avg(log.map(x => x.rating).filter(Boolean));
+  const recent = [...log].sort((a, b) => b.date.localeCompare(a.date) || b.lc - a.lc).slice(0, 12);
+  return `<div class="tiles">
+    ${tile("Solved", solved, `of ${lc.queue.length} in the queue`)}
+    ${tile("Streak", (n => n + (n === 1 ? " day" : " days"))(streak(log.map(x => x.date))), "")}
+    ${tile("First-try rate", log.length ? Math.round(first / log.length * 100) + "%" : "–", `${first} of ${log.length}`)}
+    ${tile("Avg problem rating", ar ? Math.round(ar) : "–", "")}
+    ${tile("Videos posted", vids, "")}</div>
+  <div class="grid">${card("c_cum", "Problems solved", "Cumulative, by day")}${card("c_res", "How each solve went", "Per week")}
+    ${card("c_pat", "Pattern coverage", "Solved vs. remaining in the queue, by pattern", { tall: true })}${card("c_rate", "Difficulty over time", "Problem rating of each solve")}</div>
+  <section class="card" style="margin-top:14px"><h2>Recent solves</h2><div class="tablewrap" style="max-height:none"><table><thead><tr><th>Date</th><th>#</th><th style="text-align:left">Problem</th><th style="text-align:left">Pattern</th><th>Rating</th><th style="text-align:left">Result</th></tr></thead><tbody>
+  ${recent.map(x => `<tr><td>${short(x.date)}</td><td>${x.lc}</td><td style="text-align:left">${x.link ? `<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--s1)">${x.name || "Video"} ▶</a>` : (x.name || "")}</td><td style="text-align:left">${x.pattern || ""}</td><td>${x.rating ?? ""}</td><td style="text-align:left">${x.result}</td></tr>`).join("") || '<tr><td colspan="6">No solves logged yet.</td></tr>'}</tbody></table></div></section>`;
+}
+function careerCharts() {
+  const log = [...D.leetcode.log].sort((a, b) => a.date.localeCompare(b.date)), seen = new Set(), cum = [];
+  log.forEach(x => { seen.add(x.lc); cum.push({ x: cx(x.date), y: seen.size }); });
+  const byDay = new Map(); cum.forEach(p => byDay.set(p.x, p.y));
+  draw("c_cum", { type: "line", data: { datasets: [line("Solved", [...byDay].map(([x, y]) => ({ x, y })), 0)] }, options: baseOpts(false, { scales: { x: timeX(), y: { beginAtZero: true, ticks: { precision: 0 } } } }) });
+  const r = log.filter(inRange), weeks = [...new Set(r.map(x => weekStart(x.date)))].sort();
+  const res = [["First try", /first/i], ["With hints", /hint/i], ["Checked solution", /check/i]];
+  draw("c_res", { type: "bar", data: { labels: weeks.map(short), datasets: res.map(([n, re], i) => bars(n, weeks.map(w => r.filter(x => weekStart(x.date) === w && re.test(x.result)).length), i)) },
+    options: baseOpts(true, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }) });
+  const solvedSet = new Set(log.map(x => x.lc)), pats = {};
+  D.leetcode.queue.forEach(q => { const p = q.pattern || "Other"; pats[p] = pats[p] || { d: 0, t: 0 }; pats[p].t++; if (q.done || solvedSet.has(q.lc)) pats[p].d++; });
+  const names = Object.keys(pats).sort((a, b) => pats[b].t - pats[a].t);
+  draw("c_pat", { type: "bar", data: { labels: names, datasets: [bars("Solved", names.map(n => pats[n].d), 0), bars("Remaining", names.map(n => pats[n].t - pats[n].d), 0, { color: css("--grid") })] },
+    options: baseOpts(true, { indexAxis: "y", scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }) });
+  draw("c_rate", { type: "line", data: { datasets: [line("Problem rating", pts(log, x => x.rating), 1, { extra: { showLine: false } })] }, options: baseOpts(false, { scales: { x: timeX(), y: { title: { display: true, text: "rating", color: css("--muted") }, ticks: { callback: v => v } } } }) });
+}
+</script>
+</body>
+</html>
